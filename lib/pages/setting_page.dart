@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel_app/pages/terms_and_conditions_page.dart';
 
 import '../models/login_response.dart';
@@ -185,7 +186,11 @@ class _SettingPageState extends State<SettingPage> {
               context,
               "Logout",
               () async {
+                final SharedPreferences prefs =
+                    await SharedPreferences.getInstance();
                 try {
+                  // Remove data for the 'counter' key.
+                  await prefs.remove('token');
                   await SharedService.logout(context);
                 } catch (err) {
                   if (kDebugMode) {

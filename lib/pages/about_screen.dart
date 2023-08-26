@@ -43,7 +43,7 @@ class _AboutPageState extends State<AboutPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('About', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.deepPurpleAccent,
         iconTheme: const IconThemeData(
           color: Colors.white, // set the color of the back arrow
         ),

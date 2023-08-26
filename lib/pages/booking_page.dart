@@ -1,18 +1,17 @@
 import 'dart:convert';
 
-import 'package:date_time_picker/date_time_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel_app/config/config.dart';
+import 'package:travel_app/models/booking_model.dart';
 import 'package:travel_app/pages/payment_page.dart';
-
-import '../models/booking_model.dart';
 
 class BookingPage extends StatefulWidget {
   final int boat;
-  const BookingPage(
-      {super.key, required this.boat}); // Add this line to the constructor
+
+  const BookingPage({Key? key, required this.boat}) : super(key: key);
+
   @override
   _BookingPageState createState() => _BookingPageState();
 }
@@ -20,16 +19,18 @@ class BookingPage extends StatefulWidget {
 class _BookingPageState extends State<BookingPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _bookingDateController = TextEditingController();
-  final TextEditingController _bookingFromController = TextEditingController();
-  final TextEditingController _bookingToController = TextEditingController();
+  TimeOfDay _bookingFrom =
+      TimeOfDay(hour: 8, minute: 0); // Default value for bookingFrom
+  TimeOfDay _bookingTo =
+      TimeOfDay(hour: 9, minute: 0); // Default value for bookingTo
   final TextEditingController _namesController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  String _responseMessage = '';
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _bookingDateController.dispose();
-    _bookingFromController.dispose();
-    _bookingToController.dispose();
     _namesController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -37,31 +38,60 @@ class _BookingPageState extends State<BookingPage> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Form is valid, proceed with submission
+      setState(() {
+        _isLoading = true;
+      });
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      int? id = prefs.getInt('id');
+
       final BookingData _formData = BookingData(
-        boat: 0, // Replace with the boat ID
+        boat: widget.boat,
         bookingDate: DateTime.parse(_bookingDateController.text),
-        bookingFrom: _convertTimeStringToTimeOfDay(_bookingFromController.text),
-        bookingTo: _convertTimeStringToTimeOfDay(_bookingToController.text),
+        bookingFrom:
+            '${_bookingFrom.hour.toString().padLeft(2, '0')}:${_bookingFrom.minute.toString().padLeft(2, '0')}:00', // Format as "hh:mm:ss"
+        bookingTo:
+            '${_bookingTo.hour.toString().padLeft(2, '0')}:${_bookingTo.minute.toString().padLeft(2, '0')}:00', // Format as "hh:mm:ss"
         names: _namesController.text,
         phone: _phoneController.text,
-        user: 0, // Replace with the user ID
+        user: id,
       );
+
+      if (_convertTimeToHour(_bookingFrom) >= _convertTimeToHour(_bookingTo)) {
+        setState(() {
+          _isLoading = false;
+        });
+        // Handle error: bookingFrom cannot be greater than or equal to bookingTo
+        setState(() {
+          _responseMessage =
+              'Booking From cannot be greater than or equal to Booking To';
+        });
+        return;
+      }
+
+      final int diffHours = _bookingTo.hour - _bookingFrom.hour;
 
       try {
         final response = await http.post(
           Uri.parse(Config.bookingApi),
-          body: {
-            "boat": "${widget.boat.toString()} , ${1}",
+          body: json.encode({
+            "boat": _formData.boat,
             "bookingDate": _formData.bookingDate.toIso8601String(),
-            "bookingFrom": _formData.bookingFrom.format(context),
-            "bookingTo": _formData.bookingTo.format(context),
+            "bookingFrom": _formData.bookingFrom,
+            "bookingTo": _formData.bookingTo,
+            "diffHours": diffHours,
             "names": _formData.names,
             "phone": _formData.phone,
+            "user": _formData.user,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
           },
         );
 
         if (response.statusCode == 201) {
+          setState(() {
+            _isLoading = false;
+          });
           // Success, do something with the response if needed
           print('Booking success: ${response.body}');
           final responseData = json.decode(response.body);
@@ -80,8 +110,9 @@ class _BookingPageState extends State<BookingPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              PaymentPage(bookingId: responseData['bookingId']),
+                          builder: (context) => PaymentPage(
+                              bookingId: responseData['bookingId'],
+                              amount: responseData['amountTobePaid']),
                         ),
                       );
                     },
@@ -97,25 +128,32 @@ class _BookingPageState extends State<BookingPage> {
             },
           );
         } else {
+          setState(() {
+            _isLoading = false;
+          });
           // Handle error if needed
           final responseData = json.decode(response.body);
-          print('Booking failed: ${responseData['message']}');
+          print("error happened : ${responseData['message']}");
+          setState(() {
+            _responseMessage = "${responseData['message']}";
+          });
+          Future.delayed(const Duration(seconds: 3), () {
+            setState(() {
+              _responseMessage = '';
+            });
+          });
         }
       } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
         print('Error: $e');
       }
     }
   }
 
-  TimeOfDay _convertTimeStringToTimeOfDay(String timeString) {
-    final components = timeString.split(' ');
-    final time = TimeOfDay(
-      hour: int.parse(components[0].split(':')[0]),
-      minute: int.parse(components[0].split(':')[1]),
-    );
-    return components[1].toLowerCase() == 'pm' && time.hour != 12
-        ? TimeOfDay(hour: time.hour + 12, minute: time.minute)
-        : time;
+  int _convertTimeToHour(TimeOfDay time) {
+    return time.hour;
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -131,23 +169,12 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  Future<void> _selectTime(
-      BuildContext context, TextEditingController controller) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-
-    if (picked != null) {
-      controller.text = picked.format(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Booking Form'),
+        backgroundColor: Colors.deepPurpleAccent,
       ),
       body: Form(
         key: _formKey,
@@ -170,32 +197,52 @@ class _BookingPageState extends State<BookingPage> {
               },
             ),
 
-            // Booking From (TimePicker)
-            TextFormField(
-              controller: _bookingFromController,
-              readOnly: true,
+            // Booking From (Dropdown)
+            DropdownButtonFormField<TimeOfDay>(
+              value: _bookingFrom,
+              onChanged: (value) {
+                setState(() {
+                  _bookingFrom = value!;
+                });
+              },
+              items: List.generate(11, (index) {
+                final hour = index + 8; // Start from 8:00 AM
+                return DropdownMenuItem<TimeOfDay>(
+                  value: TimeOfDay(hour: hour, minute: 0),
+                  child: Text('$hour:00 AM'),
+                );
+              }),
               decoration: InputDecoration(
                 labelText: 'Booking From',
               ),
-              onTap: () => _selectTime(context, _bookingFromController),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null) {
                   return 'Please select a booking from time';
                 }
                 return null;
               },
             ),
 
-            // Booking To (TimePicker)
-            TextFormField(
-              controller: _bookingToController,
-              readOnly: true,
+            // Booking To (Dropdown)
+            DropdownButtonFormField<TimeOfDay>(
+              value: _bookingTo,
+              onChanged: (value) {
+                setState(() {
+                  _bookingTo = value!;
+                });
+              },
+              items: List.generate(10, (index) {
+                final hour = index + 9; // Start from 9:00 AM
+                return DropdownMenuItem<TimeOfDay>(
+                  value: TimeOfDay(hour: hour, minute: 0),
+                  child: Text('$hour:00 AM'),
+                );
+              }),
               decoration: InputDecoration(
                 labelText: 'Booking To',
               ),
-              onTap: () => _selectTime(context, _bookingToController),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null) {
                   return 'Please select a booking to time';
                 }
                 return null;
@@ -224,9 +271,17 @@ class _BookingPageState extends State<BookingPage> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter phone number';
+                  return 'Please enter a phone number';
                 }
-                return null;
+
+                // Regular expression pattern for Airtel or MTN numbers
+                final RegExp phonePattern = RegExp(r'^(07[8239])[0-9]{7}$');
+
+                if (!phonePattern.hasMatch(value)) {
+                  return 'Phone Number must be an Airtel or MTN number';
+                }
+
+                return null; // Validation passed
               },
             ),
 
@@ -235,13 +290,26 @@ class _BookingPageState extends State<BookingPage> {
               onPressed: _submitForm,
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                shape: StadiumBorder(),
+                shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
                   vertical: 15,
                   horizontal: 8.0,
                 ),
               ),
-              child: const Text("Book"),
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text(
+                      "Book",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                _responseMessage,
+                style: const TextStyle(
+                    color: Colors.red, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),

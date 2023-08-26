@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
+
 LoginResponseModel loginResponseModel(String str) =>
     LoginResponseModel.fromJson(jsonDecode(str));
 
 class LoginResponseModel {
   int id;
+  String names;
   String phone;
   String text;
   String jwtToken;
@@ -12,6 +15,7 @@ class LoginResponseModel {
 
   LoginResponseModel({
     required this.id,
+    required this.names,
     required this.phone,
     required this.text,
     required this.jwtToken,
@@ -22,6 +26,7 @@ class LoginResponseModel {
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
     return LoginResponseModel(
       id: json['id'],
+      names: json['names'],
       phone: json['phone'],
       text: json['access_level'],
       jwtToken: json['jwtToken'],
@@ -38,5 +43,16 @@ class LoginResponseModel {
       'jwtToken': jwtToken,
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+}
+
+class UserProvider extends ChangeNotifier {
+  LoginResponseModel? _user;
+
+  LoginResponseModel? get user => _user;
+
+  void setUser(LoginResponseModel user) {
+    _user = user;
+    notifyListeners();
   }
 }

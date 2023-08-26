@@ -17,7 +17,6 @@ class SharedService {
     var isKeyExist =
         await APICacheManager().isAPICacheKeyExist("login_details");
     return isKeyExist;
-
   }
 
   static Future<LoginResponseModel?> loginDetails() async {

@@ -23,8 +23,8 @@ class MyApp extends StatelessWidget {
       ),
       home: Scaffold(
         body: Builder(
-          builder: (context) => SafeArea(
-              child: const CustomSplashScreen(),
+          builder: (context) => const SafeArea(
+              child: CustomSplashScreen(),
           ),
         ),
       ),

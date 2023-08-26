@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:travel_app/widgets/custom_icon_button.dart';
 import 'package:travel_app/widgets/location_card.dart';
@@ -35,6 +38,7 @@ class _HomePageState extends State<HomePage> {
   BoatData? _boatData;
   String? _greeting = '';
   bool _isLoading = true;
+  String? _names;
 
   List<Location> _locations = []; // State variable to store the locations
 
@@ -43,6 +47,11 @@ class _HomePageState extends State<HomePage> {
   late Future<List<Location>> _futureLocations;
 
   Future<List<Location>> _fetchLocationsFromApi() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? name = prefs.getString('names');
+    setState(() {
+      _names = name;
+    });
     final response = await http.get(Uri.parse(Config.getAllLocation));
 
     if (response.statusCode == 200) {
@@ -105,21 +114,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _fetchInfo() async {
-    try {
-      LoginResponseModel? userDetails = await SharedService.loginDetails();
-      if (userDetails != null) {
-        String jwt = userDetails.jwtToken;
-        int id = userDetails.id;
-        setState(() {
-          _jwtToken = jwt;
-          _id = id;
-        });
-        print("token: $jwt");
-      }
-    } catch (e) {}
-  }
-
   void _updateGreeting() {
     final hour = DateTime.now().hour;
 
@@ -137,13 +131,20 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _checkUserInfo() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    print("token");
+  }
+
   @override
   void initState() {
     super.initState();
-    _fetchInfo();
+
     fetchBoatData();
     _futureLocations = _fetchLocationsFromApi();
     _updateGreeting();
+    _checkUserInfo();
   }
 
   @override
@@ -161,7 +162,7 @@ class _HomePageState extends State<HomePage> {
             ),
             Text("$_greeting"),
             Text(
-              "Tetteh Jeron Asiedu",
+              "$_names",
               style: Theme.of(context).textTheme.labelMedium,
             ),
           ],
@@ -229,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                                   child: Center(
                                     child: Text(
                                       location.locationName,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           color: Colors.white, fontSize: 16),
                                     ),
                                   ),

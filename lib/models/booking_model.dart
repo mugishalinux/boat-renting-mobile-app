@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class BookingData {
   int boat;
   DateTime bookingDate;
-  TimeOfDay bookingFrom;
-  TimeOfDay bookingTo;
+  String bookingFrom;
+  String bookingTo;
   String names;
   String phone;
-  int user;
+  int? user;
 
   BookingData({
     required this.boat,

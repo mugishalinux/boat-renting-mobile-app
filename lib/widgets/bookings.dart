@@ -4,6 +4,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:travel_app/config/config.dart';
 import 'package:travel_app/models/booking_report.dart';
@@ -29,7 +30,10 @@ class _BookingsState extends State<Bookings> {
 
   Future<void> fetchData() async {
     try {
-      final response = await http.get(Uri.parse('${Config.bookingListApi}/1'));
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      int? id = prefs.getInt('id');
+      final response =
+          await http.get(Uri.parse('${Config.bookingListApi}/$id'));
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
         setState(() {

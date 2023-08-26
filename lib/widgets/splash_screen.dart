@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/login_response.dart';
 import '../pages/login_page.dart';
@@ -30,7 +31,10 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
   Future<void> navigateToMain() async {
     try {
       LoginResponseModel? userDetails = await SharedService.loginDetails();
-      if (userDetails != null) {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final String? token = preferences.getString('token');
+      if (token == null) {
+        print("*********************************");
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const LoginPage()),

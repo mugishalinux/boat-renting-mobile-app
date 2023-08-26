@@ -95,7 +95,7 @@ class BoatsListWidget extends StatelessWidget {
                                       fontSize: 20,
                                       color: Theme.of(context).primaryColor,
                                     ),
-                                    text: "\$${boat.price}",
+                                    text: "\${boat.price}",
                                     children: const [
                                       TextSpan(
                                         style: TextStyle(

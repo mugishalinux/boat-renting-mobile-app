@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel_app/config/config.dart';
 import 'package:travel_app/pages/navbar_state.dart';
 import 'package:travel_app/pages/registration_page.dart';
@@ -25,6 +28,8 @@ class _LoginPageState extends State<LoginPage> {
   String _responseMessage = '';
   bool _isLoading = false;
   String loginApi = Config.loginApiUser;
+
+  bool isUserLoggedIn = false;
 
   void _login() async {
     setState(() {
@@ -59,25 +64,35 @@ class _LoginPageState extends State<LoginPage> {
       String stg = response.body;
       Map<String, dynamic> jsonMap = jsonDecode(stg);
       LoginResponseModel user = LoginResponseModel.fromJson(jsonMap);
-      // if (user.text != "client") {
-      //   _isLoading = false;
-      //   setState(() {
-      //     _responseMessage = "Only client allowed to login";
-      //   });
-      //
-      //   Future.delayed(const Duration(seconds: 3), () {
-      //     setState(() {
-      //       _responseMessage = '';
-      //     });
-      //   });
-      //   setState(() {
-      //     _isLoading = false;
-      //   });
-      //   return;
-      // }
+      if (user.text != "client") {
+        _isLoading = false;
+        setState(() {
+          _responseMessage = "Only client allowed to login";
+        });
 
+        Future.delayed(const Duration(seconds: 3), () {
+          setState(() {
+            _responseMessage = '';
+          });
+        });
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      // Obtain shared preferences.
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       try {
-        await SharedService.setLoginDetails(user);
+        // print("------------------------------------------");
+        // print(user.id);
+        // print(user.text);
+        // print(user.jwtToken);
+        // print(user.phone);
+        // print(user.createdAt);
+        // print("------------------------------------------");
+        await prefs.setString('token', user.jwtToken);
+        await prefs.setInt('id', user.id);
+        await prefs.setString('names', user.names);
       } catch (err) {
         if (kDebugMode) {
           print(error);
@@ -106,6 +121,19 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      final SharedPreferences sharedPreferences =
+          await SharedPreferences.getInstance();
+      var token = sharedPreferences!.getString('token');
+      if (token != null) {
+        isUserLoggedIn = true;
+      }
+    });
   }
 
   @override

@@ -129,11 +129,11 @@ class BoatCard extends StatelessWidget {
                     children: [
                       Text(
                         'Maximum People: ${boatData.maxNumber}',
-                        style: TextStyle(color: Colors.black),
+                        style: const TextStyle(color: Colors.black),
                       ),
                       Text(
-                        'Boat Price: \$${boatData.price}/hr',
-                        style: TextStyle(color: Colors.black),
+                        "Boat Price: RWF ${boatData.price}/hr",
+                        style: const TextStyle(color: Colors.black),
                       ),
                     ],
                   ),
