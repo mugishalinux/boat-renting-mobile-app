@@ -7,6 +7,8 @@ class BookingData {
   final String names;
   final String phoneNumber;
   final String? paymentStatus;
+  final String? skipperNames;
+  final String? skipperNumber;
 
   BookingData({
     required this.id,
@@ -17,6 +19,8 @@ class BookingData {
     required this.names,
     required this.phoneNumber,
     required this.paymentStatus,
+    required this.skipperNames,
+    required this.skipperNumber,
   });
   factory BookingData.fromJson(Map<String, dynamic> json) {
     return BookingData(
@@ -28,6 +32,8 @@ class BookingData {
       names: json['names'],
       phoneNumber: json['phoneNumber'],
       paymentStatus: json['paymentStatus'],
+      skipperNames: json['skipperNames'],
+      skipperNumber: json['skipperNumber'],
     );
   }
 }

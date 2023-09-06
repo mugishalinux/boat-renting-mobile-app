@@ -47,6 +47,8 @@ class _BookingsState extends State<Bookings> {
                     names: data['names'],
                     phoneNumber: data['phoneNumber'],
                     paymentStatus: data['paymentStatus'],
+                    skipperNames: data['skipperNames'],
+                    skipperNumber: data['skipperNumber'],
                   ))
               .toList();
           _isLoading = false;
@@ -75,6 +77,8 @@ class _BookingsState extends State<Bookings> {
     String names,
     String? paymentStatus,
     String phoneNumber,
+    String? skipperNames,
+    String? skipperNumber,
   ) {
     // Convert the DateTime to a formatted string
     String formattedDate = DateFormat('yyyy-MM-dd').format(bookingDate);
@@ -101,7 +105,11 @@ class _BookingsState extends State<Bookings> {
                 SizedBox(height: 10),
                 Text('Payment Status: ${paymentStatus ?? 'No payment'}'),
                 SizedBox(height: 10),
-                Text('Phone Number: $phoneNumber'),
+                Text('Skipper Names: $skipperNames'),
+                SizedBox(height: 10),
+                Text('Skipper Number: $skipperNumber'),
+                SizedBox(height: 10),
+                Text('Payment Status: ${paymentStatus ?? 'No payment'}'),
               ],
             ),
           ),
@@ -193,7 +201,10 @@ class _BookingsState extends State<Bookings> {
                   data.bookingTo,
                   data.names,
                   data.paymentStatus,
-                  data.phoneNumber);
+                  data.phoneNumber,
+                  data.skipperNames,
+                  data.skipperNumber,
+              );
             },
             style: ButtonStyle(
               backgroundColor: MaterialStateProperty.all(Colors.white),
